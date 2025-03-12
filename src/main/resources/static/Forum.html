@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>討論區管理系統</title>
+<link rel="stylesheet" href="./css/background.css">
+<!--  <style>
+        /* 通用樣式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5dc;
+            /* 背景色，讓框架更突出 */
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            /* 整體框架與視窗邊距 */
+        }
+
+        /* 主框架 */
+        .container {
+            display: flex;
+            height: 95%;
+            /* 主框架的高度 */
+            width: 95%;
+            /* 主框架的寬度 */
+            background-color: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+            /* 添加陰影效果 */
+             border-radius: 5px;
+            /* 圓角 */
+            overflow: hidden;
+            /* 防止溢出 */
+            /* border: 2px solid #8b4513;  */
+        }
+
+        /* 側邊欄樣式 */
+        .sidebar {
+            width: 20%;
+            background-color: #f5f5dc;
+            color: #8b4513;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #8b4513;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            flex-grow: 1;
+            /* 填滿垂直空間 */
+        }
+
+        .sidebar ul li {
+            margin: 15px 0;
+        }
+
+        .sidebar ul li a {
+            color: #8b4513;
+            text-decoration: none;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .sidebar ul li a:hover {
+            color: #8b4513;
+        }
+
+        /* 內容區域樣式 */
+        .content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ecf0f1;
+        }
+
+        .content-header {
+            border-bottom: 2px solid #8b4513;
+            padding: 10px;
+            background-color: #ffffff;
+            flex-shrink: 0;
+            color: #8b4513;
+        }
+
+        .dynamic-content {
+            flex-grow: 1;
+            padding: 20px;
+            /* border: 2px solid #2c3e50; */
+            background-color: #ffffff;
+            overflow-y: auto;
+        }
+	
+        h2 a:visited {
+            color: white
+        }
+    </style> -->
+</head>
+
+<body>
+	<div class="container">
+		<div class="sidebar">
+			<h2>功能選單</h2>
+			<ul>
+				<li><a href="../train/homepage1.html">訓練教學</a></li>
+				<li><a href="../Coach/coachpage.html">教練管理</a></li>
+				<li><a href="../shopping.html">線上商店</a></li>
+				<li><a href="Forum.html">討論區</a></li>
+				<li><a href="../health/healthpage.html">健康管理系統</a></li>
+				<li><a href="../Member/back.html">會員中心</a></li>
+
+			</ul>
+		</div>
+		<div class="content">
+			<div class="content-header" id="contentHeader">歡迎</div>
+			<div class="dynamic-content" id="link-container"></div>
+		</div>
+
+	</div>
+	<script>
+  		  function loadContent(url) {
+       	
+       		 var xhr = new XMLHttpRequest();
+       		 xhr.open('GET','/board/ForumManage.jsp', true);
+       		 xhr.onreadystatechange = function () {
+          	  if (xhr.readyState == 4 && xhr.status == 200) {
+                var linkContainer = document.querySelector('.dynamic-content');
+                linkContainer.innerHTML = xhr.responseText; 
+            }
+        };
+       		 xhr.send();
+    }
+
+   
+    		window.onload = function () {
+     	   loadContent('/board/ForumManage.jsp'); 
+    };
+    
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("頁面載入完成，開始取得文章資料...");
+        loadArticles();
+    });
+
+    function loadArticles() {
+        fetch('/articles/all')
+            .then(response => response.json())
+            .then(data => {
+                console.log("取得的文章資料:", data);
+                const tbody = document.getElementById("dynamic-content");
+                tbody.innerHTML = ""; // 清空舊資料
+
+                if (data && data.length > 0) {
+                    data.forEach(article => {
+                    	const id = typeof article.id === "number" ? article.id : 'N/A';
+                        const category = typeof article.category === "string" ? article.category : 'N/A';
+                        const author = typeof article.author === "string" ? article.author : 'N/A';
+                        const title = typeof article.title === "string" ? article.title : 'N/A';
+                        const createdAt = typeof article.createdAt === "string" ? article.createdAt : 'N/A';
+
+                        const row = `
+                            <tr>
+                                <td>${id}</td>
+                                <td>${category}</td>
+                                <td>${author}</td>
+                                <td><a id="views" href="javascript:void(0);" onclick="viewArticle(${article.id})">${title}</a></td>
+                                <td>${createdAt}</td>
+                                <td class="action-buttons">
+                                <a class="update" href="javascript:void(0);" onclick="editArticle(${id})">更新</a>
+                                <br>
+                                <a class="delete" href="javascript:void(0);" onclick="deleteArticle(${id})">刪除</a>
+                            </td>
+                            </tr>
+                        `;
+                       
+                        tbody.insertAdjacentHTML("beforeend", row);
+                        
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="6" class="no-data">目前沒有文章</td></tr>`;
+                }
+            })
+            .catch(error => {
+                console.error("取得文章時發生錯誤:", error);
+            });
+    }
+
+    function loadAddArticleForm() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/board/AddArticle.jsp', true); 
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                document.getElementById("link-container").innerHTML = xhr.responseText; 
+            }
+        };
+        xhr.send();
+    }
+    
+    function submitArticle() {
+        
+        const category = document.getElementById("category").value;
+        const author = document.getElementById("author").value;
+        const title = document.getElementById("title").value;
+        const content = document.getElementById("content").value;
+
+ 
+        const article = {
+            category: category,
+            author: author,
+            title: title,
+            content: content
+        };
+
+        
+        fetch('/articles/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify(article) 
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("HTTP error! status: " + response.status);
+            }
+            return response.text();
+        })
+        .then(data => {
+            alert("新增成功"); 
+            window.location.href = "/Forum.html";
+        })
+        .catch(error => {
+            console.error("新增文章失敗：", error);
+        });
+    }
+    
+    function viewArticle(id) {
+        if (!id || isNaN(id)) {
+            console.error("無效的文章 ID:", id);
+            document.querySelector('.dynamic-content').innerHTML = "<p>無效的文章 ID。</p>";
+            return;
+        }
+
+      
+        fetch(`/articles/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`無法加載文章，HTTP 狀態碼: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(article => {
+            
+            document.querySelector('.dynamic-content').innerHTML = `
+                
+                <div class="article-container">
+            	<div class="action-buttonsv">
+                <a class="update" href="javascript:void(0);" onclick="editArticle(${article.id})">更新</a>
+                <a class="delete" href="javascript:void(0);" onclick="deleteArticle(${article.id})">刪除</a>
+            </div>
+                    <h2>${article.title}</h2>
+                    <p><strong>作者：</strong>${article.author}</p>
+                    <p><strong>分類：</strong>${article.category}</p>
+                    <div class="content">${article.content}</div>
+                    <a href="/Forum.html" class="back-button">返回文章列表</a>
+                
+                <div class="comments-section">
+                <h3>留言</h3>
+                <div class="comments-container"></div> 
+            </div>
+            </div>
+            `;
+
+            
+            loadComments(id);
+        })
+        .catch(error => {
+            console.error("文章加載失敗:", error);
+            document.querySelector('.dynamic-content').innerHTML = "<p>文章加載失敗。</p>";
+        });
+    }
+
+   
+    function loadComments(articleId) {
+        fetch(`/comments/article/${articleId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`加載留言失敗，HTTP 狀態碼: ${response.status}`);
+            }
+           
+            return response.text().then(text => text ? JSON.parse(text) : []);
+        })
+        .then(comments => {
+            const commentsContainer = document.querySelector('.comments-container');
+            commentsContainer.innerHTML = ''; // 清空現有留言
+
+            if (comments.length === 0) {
+                commentsContainer.innerHTML = '<p>目前尚無留言。</p>';
+                return;
+            }
+
+            comments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.classList.add('comment');
+                commentElement.innerHTML = `
+                    <div class="comment-header">
+                        <span class="comment-author">${comment.author}</span>
+                        <span class="comment-time">${new Date(comment.createdAt).toLocaleString()}</span>
+                    </div>
+                    <p class="comment-content">${comment.content}</p>
+                    <div class="comment-action">
+                        <button class="delete" type="button" onclick="deleteComment(${comment.id}, ${articleId})">刪除</button>
+                    </div>
+                `;
+                commentsContainer.appendChild(commentElement);
+            });
+        })
+        .catch(error => {
+            console.error('留言加載失敗:', error);
+            const commentsContainer = document.querySelector('.comments-container');
+            commentsContainer.innerHTML = '<p>留言加載失敗。</p>';
+        });
+    }
+   
+    
+    function editArticle(id) {
+        if (!id || isNaN(id)) {
+            console.error("無效的文章 ID:", id);
+            document.querySelector('.dynamic-content').innerHTML = "<p>無效的文章 ID。</p>";
+            return;
+        }
+
+        fetch(`/articles/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`無法加載編輯頁面，HTTP 狀態碼: ${response.status}`);
+            }
+            return response.json(); 
+        })
+        .then(article => {
+            document.querySelector('.dynamic-content').innerHTML = `
+                <div class="form-container">
+                    <h1>編輯文章</h1>
+                    <form id="update-article-form">
+                        <input type="hidden" id="id" value="${article.id}">
+                        <div class="form-group">
+                            <label for="title">標題</label>
+                            <input type="text" id="title" value="${article.title}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="author">作者</label>
+                            <input type="text" id="author" value="${article.author}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">分類</label>
+                            <select id="category" required>
+                                <option value="減重" ${article.category === '減重' ? 'selected' : ''}>減重</option>
+                                <option value="增重" ${article.category === '增重' ? 'selected' : ''}>增重</option>
+                                <option value="心得" ${article.category === '心得' ? 'selected' : ''}>心得</option>
+                                <option value="討論" ${article.category === '討論' ? 'selected' : ''}>討論</option>
+                                <option value="知識" ${article.category === '知識' ? 'selected' : ''}>知識</option>
+                                <option value="問題" ${article.category === '問題' ? 'selected' : ''}>問題</option>
+                                <option value="新聞" ${article.category === '新聞' ? 'selected' : ''}>新聞</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="content">內容</label>
+                            <textarea id="content" required>${article.content}</textarea>
+                        </div>
+                        <button type="button"  onclick="submitUpdate(${article.id})">提交更新</button>
+                    </form>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error("加載編輯頁面失敗:", error);
+            document.querySelector('.dynamic-content').innerHTML = "<p>無法加載編輯頁面。</p>";
+        });
+    }
+    
+    function submitUpdate(id) {
+    	
+      
+        if (!id || isNaN(id)) {
+            console.error("無效的文章 ID:", id);
+            alert("無效的文章 ID");
+            return;
+        }
+
+        
+        const category = document.getElementById("category").value;
+        const author = document.getElementById("author").value;
+        const title = document.getElementById("title").value;
+        const content = document.getElementById("content").value;
+
+        
+        const updatedArticle = {
+            title: title,
+            author: author,
+            category: category,
+            content: content
+        };
+
+      
+        fetch(`/articles/update/${id}`, {
+            method: 'PUT', 
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedArticle)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("更新失敗，HTTP 狀態碼: " + response.status);
+            }
+            return response.text();
+        })
+        .then(data => {
+            alert("更新成功"); 
+            window.location.href = "/Forum.html"; 
+        })
+        .catch(error => {
+            console.error("更新失敗:", error);
+            alert("更新失敗，請檢查後重試！");
+        });
+    }
+	
+    function searchArticles() {
+        
+        const title = document.getElementById("search-title").value;
+
+        if (!title || title.trim() === "") {
+            alert("請輸入有效的文章標題");
+            return;
+        }
+
+        
+        fetch(`/search?title=${encodeURIComponent(title)}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`搜尋失敗，HTTP 狀態碼: ${response.status}`);
+            }
+            return response.json(); 
+        })
+        .then(data => {
+            
+            const resultsContainer = document.querySelector(".dynamic-content");
+            resultsContainer.innerHTML = ""; // 清空舊的結果
+
+            if (data.length === 0) {
+                resultsContainer.innerHTML = `<p class="no-results">未找到相關文章</p>`;
+                return;
+            }
+ 
+            const tableContainer = document.createElement("div");
+            tableContainer.classList.add("table-container"); 
+
+            
+            const table = document.createElement("table");
+            table.classList.add("results-table"); 
+
+           
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>文章ID</th>
+                        <th>分類</th>
+                        <th>作者</th>
+                        <th>標題</th>
+                        <th>發表時間</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+            `;
+
+            
+            const tbody = document.createElement("tbody");
+
+            data.forEach(article => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${article.id}</td>
+                    <td>${article.category}</td>
+                    <td>${article.author}</td>
+                    <td><a id="views" href="javascript:void(0);" onclick="viewArticle(${article.id})">${article.title}</a></td>
+                    <td>${article.createdAt}</td>
+                    <td class="action-buttons">
+                        <a class="update" href="javascript:void(0);" onclick="editArticle(${article.id})">更新</a>
+                        <br>
+                        <a class="delete" href="javascript:void(0);" onclick="deleteArticle(${article.id})">刪除</a>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+            tableContainer.appendChild(table); 
+            resultsContainer.appendChild(tableContainer); 
+            
+       
+            const backButtonContainer = document.createElement("div");
+            backButtonContainer.className = "back-button-container";
+
+            const backButton = document.createElement("a");
+            backButton.href = "javascript:void(0);";
+            backButton.className = "back-buttonResult";
+            backButton.textContent = "返回全部文章";
+            backButton.onclick = function () {
+            	 window.location.href = "/Forum.html";
+            };
+
+            backButtonContainer.appendChild(backButton);
+            resultsContainer.appendChild(backButtonContainer);
+        })
+        .catch(error => {
+            console.error("搜尋失敗：", error);
+            const resultsContainer = document.querySelector(".dynamic-content");
+            resultsContainer.innerHTML = `<p class="error-message">搜尋失敗，請稍後再試。</p>`;
+        });
+    }
+    function deleteArticle(articleId) {
+        if (confirm("確定要刪除此文章嗎？")) {
+            fetch(`/articles/delete/${articleId}`, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) {
+                        console.log(`文章 ${articleId} 刪除成功`);
+                        alert("刪除成功！"); 
+                        window.location.href = "/Forum.html";
+                    } else {
+                        console.error(`刪除文章失敗：${response.status}`);
+                        alert("刪除失敗，請稍後再試！"); 
+                    }
+                })
+                .catch(error => {
+                    console.error("刪除文章時發生錯誤：", error);
+                    alert("刪除時發生錯誤，請稍後再試！");
+                });
+        }
+    }
+    
+    function deleteComment(commentId, articleId) {
+        
+        if (!confirm('確定要刪除此留言嗎？')) {
+            return; 
+        }
+
+        fetch(`/articles/delete/comment/${commentId}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    console.log(`留言 ${commentId} 刪除成功`);
+                    alert("刪除成功！"); 
+                    loadComments(articleId); 
+                } else {
+                    console.error(`刪除失敗：${response.status}`);
+                    alert("刪除失敗，請稍後再試"); 
+                }
+            })
+            .catch(error => {
+                console.error("刪除留言時發生錯誤：", error);
+                alert("刪除時發生錯誤，請稍後再試");
+            });
+    }
+
+    
+</script>
+
+</body>
+
+</html>
